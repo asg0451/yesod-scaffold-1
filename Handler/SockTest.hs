@@ -13,7 +13,10 @@ import Network.WebSockets (ConnectionException (..))
 import           Control.Concurrent.STM.TVar
 import qualified Data.Map                      as M
 -- not reqd
-import qualified Network.WebSockets.Connection as W
+import qualified Network.WebSockets.Connection as WC
+import qualified Network.WebSockets as W
+
+import Data.Aeson
 
 getSockTestR :: Handler Html
 getSockTestR = do
@@ -35,6 +38,7 @@ chatApp = do
     smap <- liftIO $ readTVarIO sockMap
     liftIO $ print $ M.size smap
     sendTextData $ "Welcome " <> name
+    sendBinaryData $ encode $ object [("boop" .= ("beep" :: String))]
     writeChan <- appChatChan <$> appChatStuff <$> getYesod
     readChan <-
         liftIO $
@@ -53,10 +57,20 @@ chatApp = do
                            S.atomically $
                            writeTChan writeChan $ name <> ": " <> msg
                        liftIO $ print "received data"))) `catch`
-        (\(e :: ConnectionException) ->
-              case e of
-                  CloseRequest code reason -> liftIO $ print e
-                  ConnectionClosed -> liftIO $ print e
-                  ParseException s -> liftIO $ print e) `catch`
-        (\(e :: SomeException) ->
-              liftIO $ print e)
+        (\(e :: ConnectionException)    -- not actually doing any handling
+           ->
+              do case e of
+                     CloseRequest code reason ->
+                         liftIO $
+                         S.atomically $ modifyTVar sockMap $ M.delete name
+                     ConnectionClosed ->
+                         liftIO $
+                         S.atomically $ modifyTVar sockMap $ M.delete name
+                     ParseException s -> return ()
+                 print e) `catch`
+            (\(e :: SomeException) ->
+                  liftIO $ do print e
+                              S.atomically $ modifyTVar sockMap $ M.delete name)
+    smap <- liftIO $ readTVarIO sockMap
+    liftIO $ print $ M.size smap
+    liftIO $ mapM_ (\c -> W.sendTextData c ("someone left" :: T.Text)) $ smap
