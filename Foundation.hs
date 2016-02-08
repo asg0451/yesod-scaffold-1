@@ -11,6 +11,10 @@ import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Lazy as T
+
+import Control.Concurrent.STM.TChan
+import Control.Concurrent.STM
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -22,6 +26,7 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
+    , appChatChan    :: TChan T.Text
     }
 
 -- This is where we define all of the routes in our application. For a full

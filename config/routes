@@ -9,3 +9,5 @@
 /comments CommentR POST
 
 /otherpage OtherPageR GET
+
+/socktest SockTestR GET

@@ -24,6 +24,7 @@ library
                      Handler.Home
                      Handler.Comment
                      Handler.OtherPage
+                     Handler.SockTest
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -85,6 +86,9 @@ library
                  , time
                  , case-insensitive
                  , wai
+
+                 , yesod-websockets
+                 , stm
 
 executable         y1
     if flag(library-only)
