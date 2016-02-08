@@ -39,6 +39,10 @@ import Handler.OtherPage
 import Handler.SockTest
 
 import Control.Concurrent.STM as S
+import           Control.Concurrent.STM.TVar
+import qualified Data.Map.Lazy as M
+import           Yesod.WebSockets
+import qualified Network.WebSockets.Connection as W
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -59,7 +63,10 @@ makeFoundation appSettings = do
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
 
-    appChatChan <- S.atomically newBroadcastTChan
+    appChatChan <- S.atomically newBroadcastTChan -- fifo queue for chat
+    appSocketsMap <- S.atomically $ newTVar $ M.empty
+
+    let appChatStuff = ChatStuff {..}
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
     -- logging function. To get out of this loop, we initially create a
@@ -71,7 +78,6 @@ makeFoundation appSettings = do
         -- https://ocharles.org.uk/blog/posts/2014-12-04-record-wildcards.html
         tempFoundation = mkFoundation $ error "connPool forced in tempFoundation"
         logFunc = messageLoggerSource tempFoundation appLogger
-
     -- Create the database connection pool
     pool <- flip runLoggingT logFunc $ createSqlitePool
         (sqlDatabase $ appDatabaseConf appSettings)

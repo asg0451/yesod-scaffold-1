@@ -90,6 +90,9 @@ library
                  , yesod-websockets
                  , stm
 
+                 , websockets
+                 , stm-containers
+
 executable         y1
     if flag(library-only)
         Buildable: False

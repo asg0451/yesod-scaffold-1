@@ -16,6 +16,14 @@ import qualified Data.Text.Lazy as T
 import Control.Concurrent.STM.TChan
 import Control.Concurrent.STM
 
+import qualified Data.Map.Lazy as M
+import           Control.Concurrent.STM.TVar
+import           Yesod.WebSockets
+import qualified Network.WebSockets.Connection as W
+
+data ChatStuff = ChatStuff { appChatChan :: TChan T.Text
+                           , appSocketsMap :: TVar (M.Map T.Text W.Connection) }
+
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
@@ -26,7 +34,7 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
-    , appChatChan    :: TChan T.Text
+    , appChatStuff   :: ChatStuff
     }
 
 -- This is where we define all of the routes in our application. For a full
