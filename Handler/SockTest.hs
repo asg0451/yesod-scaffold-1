@@ -4,21 +4,25 @@ module Handler.SockTest where
 import           Import
 
 import qualified Data.Text.Lazy                as T
+import           Text.Julius           (RawJS (..))
 
 import           Control.Concurrent.STM        as S
 import           Yesod.WebSockets
+import Network.WebSockets (ConnectionException (..))
 
 import           Control.Concurrent.STM.TVar
 import qualified Data.Map                      as M
 -- not reqd
 import qualified Network.WebSockets.Connection as W
 
-
 getSockTestR :: Handler Html
 getSockTestR = do
     webSockets chatApp
     defaultLayout $
         do setTitle "watwatwat!"
+           outputId <- newIdent
+           formId   <- newIdent
+           inputId  <- newIdent
            $(widgetFile "socktest")
 
 chatApp :: WebSocketsT Handler ()
@@ -37,12 +41,22 @@ chatApp = do
         S.atomically $
         do writeTChan writeChan $ name <> " has joined the chat"
            dupTChan writeChan
-    race_
-        (forever $
-         do val <- liftIO $ S.atomically (readTChan readChan)
-            sendTextData val)
-        (sourceWS $$
-         mapM_C
-             (\(msg :: T.Text) ->
-                   liftIO $
-                   S.atomically $ writeTChan writeChan $ name <> ": " <> msg))
+    (race_
+         (forever $
+          do val <- liftIO $ S.atomically (readTChan readChan)
+             e <- sendTextData val
+             liftIO $ print "sent data")
+         (sourceWS $$
+          mapM_C
+              (\(msg :: T.Text) ->
+                    do liftIO $
+                           S.atomically $
+                           writeTChan writeChan $ name <> ": " <> msg
+                       liftIO $ print "received data"))) `catch`
+        (\(e :: ConnectionException) ->
+              case e of
+                  CloseRequest code reason -> liftIO $ print e
+                  ConnectionClosed -> liftIO $ print e
+                  ParseException s -> liftIO $ print e) `catch`
+        (\(e :: SomeException) ->
+              liftIO $ print e)

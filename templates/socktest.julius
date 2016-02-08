@@ -1,6 +1,6 @@
-var output = document.getElementById("output"),
-    form = document.getElementById("form"),
-    input = document.getElementById("input"),
+var output = document.getElementById("#{rawJS outputId}"),
+    form = document.getElementById("#{rawJS formId}"),
+    input = document.getElementById("#{rawJS inputId}"),
     conn;
 
 url = "@{SockTestR}".replace("http:", "ws:").replace("https:", "wss:");
@@ -11,6 +11,10 @@ conn.onmessage = function(e) {
     p.appendChild(document.createTextNode(e.data));
     output.appendChild(p);
 };
+
+conn.onclose = function() {
+    console.log("closing socket");
+}
 
 form.addEventListener("submit", function(e){
     conn.send(input.value);
