@@ -3,20 +3,21 @@ module Handler.SockTest where
 
 import           Import
 
-import qualified Data.Text.Lazy                as T
-import           Text.Julius           (RawJS (..))
+import qualified Data.Text.Lazy         as T
+import           Text.Julius            (RawJS (..))
 
-import           Control.Concurrent.STM        as S
+import           Control.Concurrent.STM as S
+import           Network.WebSockets     (ConnectionException (..))
 import           Yesod.WebSockets
-import Network.WebSockets (ConnectionException (..))
 
-import           Control.Concurrent.STM.TVar
-import qualified Data.Map                      as M
+import qualified Data.Map               as M
 -- not reqd
-import qualified Network.WebSockets.Connection as WC
-import qualified Network.WebSockets as W
 
-import Data.Aeson
+import qualified Network.WebSockets     as W
+
+import           Data.Aeson
+
+import           Data.Conduit
 
 getSockTestR :: Handler Html
 getSockTestR = do
@@ -68,9 +69,14 @@ chatApp = do
                          S.atomically $ modifyTVar sockMap $ M.delete name
                      ParseException s -> return ()
                  print e) `catch`
-            (\(e :: SomeException) ->
-                  liftIO $ do print e
-                              S.atomically $ modifyTVar sockMap $ M.delete name)
+        (\(e :: SomeException) ->
+              liftIO $
+              do print e
+                 S.atomically $ modifyTVar sockMap $ M.delete name)
     smap <- liftIO $ readTVarIO sockMap
     liftIO $ print $ M.size smap
-    liftIO $ mapM_ (\c -> W.sendTextData c ("someone left" :: T.Text)) $ smap
+    liftIO $
+        mapM_
+            (\c ->
+                  W.sendTextData c ("someone left" :: T.Text)) $
+        smap
