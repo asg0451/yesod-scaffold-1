@@ -125,6 +125,10 @@ instance Yesod App where
         level == LevelWarn || level == LevelError
     makeLogger = return . appLogger
 
+    -- set max content length to 200 mb for homepage, default 2mb for rest
+    maximumContentLength _ (Just (HomeR)) = Just $ 200 * 1024 * 1024
+    maximumContentLength _ _ = Just $ 2 * 1024 * 1024 -- 2 megabytes
+
 isRegularUser = do
     mu <- maybeAuthId
     liftIO $ print mu
