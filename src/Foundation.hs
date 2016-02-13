@@ -21,6 +21,8 @@ import           Control.Concurrent.STM.TVar
 import           Yesod.WebSockets
 import qualified Network.WebSockets.Connection as W
 
+
+
 data ChatStuff = ChatStuff { appChatChan :: TChan T.Text
                            , appSocketsMap :: TVar (M.Map T.Text W.Connection) }
 
@@ -183,6 +185,11 @@ instance RenderMessage App FormMessage where
 -- This can also be useful for writing code that works across multiple Yesod applications.
 instance HasHttpManager App where
     getHttpManager = appHttpManager
+
+
+
+
+
 
 unsafeHandler :: App -> Handler a -> IO a
 unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger

@@ -25,6 +25,7 @@ library
                      Handler.Comment
                      Handler.OtherPage
                      Handler.SockTest
+                     Handler.AngularTest
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -92,6 +93,7 @@ library
 
                  , websockets
                  , stm-containers
+
 
 executable         y1
     if flag(library-only)
