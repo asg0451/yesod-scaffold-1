@@ -21,7 +21,11 @@ import           Control.Concurrent.STM.TVar
 import           Yesod.WebSockets
 import qualified Network.WebSockets.Connection as W
 
-
+import System.Process
+import System.Exit (ExitCode (..))
+import System.IO.Unsafe
+import qualified Data.ByteString.Lazy.Char8 as C8 (unpack, pack)
+import qualified Data.ByteString.Lazy as BL
 
 data ChatStuff = ChatStuff { appChatChan :: TChan T.Text
                            , appSocketsMap :: TVar (M.Map T.Text W.Connection) }
@@ -98,7 +102,7 @@ instance Yesod App where
     isAuthorized (AuthR _) _ = return Authorized
     isAuthorized FaviconR _ = return Authorized
     isAuthorized RobotsR _ = return Authorized
-    isAuthorized OtherPageR _ = isRegularUser
+    isAuthorized OtherPageR _ = return Authorized -- isRegularUser
     -- Default to Authorized for now.
     isAuthorized _ _ = return Authorized
 
@@ -109,8 +113,13 @@ instance Yesod App where
     addStaticContent ext mime content = do
         master <- getYesod
         let staticDir = appStaticDir $ appSettings master
+        let newMinify = case ext of
+                          "js" -> \b -> case babelize b of
+                                    Left a -> Left a
+                                    Right b2 -> minifym $ b2
+                          _ -> minifym
         addStaticContentExternal
-            minifym
+            newMinify
             genFileName
             staticDir
             (StaticR . flip StaticRoute [])
@@ -201,3 +210,19 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+
+-- babel js compiler inserted before minifym
+
+{-# NOINLINE  babelize #-}
+babelize :: BL.ByteString -> Either String BL.ByteString
+babelize b =
+    unsafePerformIO $
+    do r@(x,o,e) <-
+           readCreateProcessWithExitCode
+               (shell "node /home/miles/node_modules/babel-cli/bin/babel.js --presets react")
+               (C8.unpack b)
+       print "babelized"
+       print r
+       if x /= ExitSuccess
+           then return $ Left o
+           else return $ Right $ C8.pack o

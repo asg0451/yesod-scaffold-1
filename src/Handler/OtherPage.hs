@@ -16,5 +16,4 @@ getOtherPageR :: Handler Html
 getOtherPageR =
     defaultLayout $
     do setTitle "watwatwat!"
-       [whamlet| <p> yo what up
-                 <p> mofk    |]
+       $(widgetFile "otherpage")
